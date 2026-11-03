@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0d0f1a">
+  <meta name="description" content="Tetris in the browser, with hold, ghost piece, and touch controls.">
+  <title>Tetris</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="game">
+    <aside class="panel panel-left">
+      <section class="box">
+        <h2>Hold</h2>
+        <canvas id="hold" width="96" height="96"></canvas>
+      </section>
+      <section class="box stats">
+        <h2>Score</h2>
+        <output id="score">0</output>
+        <h2>Best</h2>
+        <output id="best">0</output>
+        <h2>Level</h2>
+        <output id="level">1</output>
+        <h2>Lines</h2>
+        <output id="lines">0</output>
+      </section>
+    </aside>
+
+    <div class="board-wrap">
+      <canvas id="board" width="300" height="600" aria-label="Tetris board"></canvas>
+      <div id="overlay" class="overlay">
+        <h1 id="overlay-title">Tetris</h1>
+        <p id="overlay-text"></p>
+        <button id="overlay-btn" type="button">Play</button>
+      </div>
+    </div>
+
+    <aside class="panel panel-right">
+      <section class="box">
+        <h2>Next</h2>
+        <canvas id="next" width="96" height="264"></canvas>
+      </section>
+      <section class="box help">
+        <h2>Keys</h2>
+        <dl>
+          <dt>&larr; &rarr;</dt><dd>Move</dd>
+          <dt>&darr;</dt><dd>Soft drop</dd>
+          <dt>&uarr; / X</dt><dd>Rotate</dd>
+          <dt>Z</dt><dd>Rotate back</dd>
+          <dt>Space</dt><dd>Hard drop</dd>
+          <dt>C</dt><dd>Hold</dd>
+          <dt>P</dt><dd>Pause</dd>
+        </dl>
+      </section>
+    </aside>
+
+    <div class="touch" aria-label="Touch controls">
+      <button type="button" data-action="left" aria-label="Move left">&larr;</button>
+      <button type="button" data-action="right" aria-label="Move right">&rarr;</button>
+      <button type="button" data-action="down" aria-label="Soft drop">&darr;</button>
+      <button type="button" data-action="rotate" aria-label="Rotate">&#8635;</button>
+      <button type="button" data-action="drop" aria-label="Hard drop">&#10515;</button>
+      <button type="button" data-action="hold" aria-label="Hold">Hold</button>
+      <button type="button" data-action="pause" aria-label="Pause">&#10074;&#10074;</button>
+    </div>
+  </main>
+  <script src="game.js"></script>
+</body>
+</html>
