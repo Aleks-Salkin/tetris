@@ -86,7 +86,8 @@ const Sound = (() => {
       const samples = noiseBuffer.getChannelData(0);
       for (let i = 0; i < samples.length; i++) samples[i] = Math.random() * 2 - 1;
     }
-    if (ctx.state === 'suspended') ctx.resume();
+    // Besides "suspended", iOS reports "interrupted" after a phone call or lock screen.
+    if (ctx.state !== 'running') ctx.resume();
   }
 
   function tone(bus, type, freq, start, length, volume, endFreq) {

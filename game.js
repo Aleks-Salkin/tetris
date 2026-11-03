@@ -12,7 +12,12 @@ const ARR = 40; // Interval between repeats once it has started.
 const SOFT_DROP_INTERVAL = 40;
 const NEXT_COUNT = 3;
 const BEST_KEY = 'tetris-best';
-const COMPACT_QUERY = '(max-width: 640px), (pointer: coarse)'; // Keep in sync with style.css.
+const COMPACT_QUERY = '(max-width: 640px), (pointer: coarse), (max-height: 500px)'; // Keep in sync with style.css.
+const MAX_CANVAS_DPR = 2; // Chunky pixel art gains nothing sharper, and fewer pixels saves battery.
+
+// Touch gestures on the board.
+const TAP_MAX_MS = 250;
+const FLICK_MIN_SPEED = 0.8; // Pixels per millisecond.
 
 // Feedback thresholds for a placed piece.
 const SNUG_CONTACTS = 5; // Block sides touching walls, floor, or the stack.
@@ -277,6 +282,7 @@ function lock() {
   const row = p.y;
   const cleared = clearLines();
   state.holdUsed = false;
+  stackDirty = true;
   Sound.land();
   giveFeedback(cleared, contacts, newHoles, row);
   if (fullyHidden) {
@@ -289,14 +295,22 @@ function lock() {
 function giveFeedback(cleared, contacts, newHoles, row) {
   if (cleared > 0) {
     Sound.good(cleared);
+    buzz(25);
     state.pop = { text: CLEAR_WORDS[cleared], color: '#f7e04b', row, age: 0 };
   } else if (newHoles >= BAD_NEW_HOLES) {
     Sound.bad();
+    buzz([40, 50, 90]);
     state.pop = { text: 'OOPS!', color: '#ff7a5a', row, age: 0 };
   } else if (newHoles === 0 && contacts >= SNUG_CONTACTS) {
     Sound.good(1);
+    buzz(25);
     state.pop = { text: 'NICE!', color: '#f7e04b', row, age: 0 };
   }
+}
+
+// Phone vibration, where supported (Android browsers; iOS Safari has none).
+function buzz(pattern) {
+  if (navigator.vibrate && !Sound.isMuted()) navigator.vibrate(pattern);
 }
 
 function clearLines() {
@@ -358,6 +372,7 @@ function newGame() {
   state.pop = null;
   state.flash = null;
   state.mode = 'playing';
+  stackDirty = true;
   overlay.hidden = true;
   Sound.setPressure(0, 1);
   Sound.startMusic();
@@ -411,9 +426,16 @@ function toggleSound() {
 }
 
 function updateSoundLabels() {
-  const label = Sound.isMuted() ? 'Sound off' : 'Sound on';
+  const muted = Sound.isMuted();
+  const label = muted ? 'Sound off' : 'Sound on';
   document.querySelectorAll('[data-sound-label]').forEach((el) => {
-    el.textContent = label;
+    if (el.dataset.soundLabel === 'icon') {
+      el.textContent = muted ? '♪×' : '♪';
+      el.setAttribute('aria-label', label);
+      el.setAttribute('aria-pressed', String(muted));
+    } else {
+      el.textContent = label;
+    }
   });
 }
 
@@ -500,6 +522,11 @@ window.addEventListener('blur', () => {
   if (state.mode === 'playing') togglePause();
 });
 
+// Phones can switch apps or lock the screen without the window ever blurring.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && state.mode === 'playing') togglePause();
+});
+
 overlayBtn.addEventListener('click', () => {
   overlayBtn.blur();
   Sound.unlock();
@@ -512,36 +539,98 @@ $('sound-btn').addEventListener('click', (e) => {
   e.currentTarget.blur();
 });
 
-document.querySelectorAll('.touch button').forEach((btn) => {
+document.querySelectorAll('button[data-action]').forEach((btn) => {
   const action = btn.dataset.action;
   btn.addEventListener('pointerdown', (e) => {
     e.preventDefault();
+    // A thumb drifting off the button shouldn't drop a held move.
+    btn.setPointerCapture(e.pointerId);
     if (action === 'pause') togglePause();
     else if (action === 'sound') toggleSound();
     else press(action);
   });
-  for (const type of ['pointerup', 'pointercancel', 'pointerleave']) {
+  for (const type of ['pointerup', 'pointercancel']) {
     btn.addEventListener(type, () => release(action));
   }
+  btn.addEventListener('contextmenu', (e) => e.preventDefault());
+});
+
+// Board gestures: tap to rotate, drag sideways to move, drag down to soft drop,
+// and flick down to hard drop.
+let gesture = null;
+
+boardCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+boardCanvas.addEventListener('pointerdown', (e) => {
+  if (e.pointerType === 'mouse' || state.mode !== 'playing' || gesture) return;
+  e.preventDefault();
+  boardCanvas.setPointerCapture(e.pointerId);
+  gesture = {
+    id: e.pointerId,
+    startX: e.clientX,
+    startY: e.clientY,
+    anchorX: e.clientX,
+    time: e.timeStamp,
+    moved: false,
+  };
+});
+
+boardCanvas.addEventListener('pointermove', (e) => {
+  if (!gesture || e.pointerId !== gesture.id || state.mode !== 'playing') return;
+  const cell = boardCanvas.getBoundingClientRect().width / COLS;
+  while (Math.abs(e.clientX - gesture.anchorX) >= cell) {
+    const dir = Math.sign(e.clientX - gesture.anchorX);
+    move(dir);
+    gesture.anchorX += dir * cell;
+    gesture.moved = true;
+  }
+  const dy = e.clientY - gesture.startY;
+  if (dy > cell * 1.5 && dy > Math.abs(e.clientX - gesture.startX)) {
+    state.softDrop = true;
+    gesture.moved = true;
+  }
+});
+
+boardCanvas.addEventListener('pointerup', (e) => {
+  if (!gesture || e.pointerId !== gesture.id) return;
+  const { startX, startY, time, moved } = gesture;
+  gesture = null;
+  state.softDrop = false;
+  if (state.mode !== 'playing') return;
+  const cell = boardCanvas.getBoundingClientRect().width / COLS;
+  const dy = e.clientY - startY;
+  const ms = Math.max(1, e.timeStamp - time);
+  if (dy > cell * 2 && dy > Math.abs(e.clientX - startX) && dy / ms >= FLICK_MIN_SPEED) hardDrop();
+  else if (!moved && ms <= TAP_MAX_MS) rotate(1);
+});
+
+boardCanvas.addEventListener('pointercancel', () => {
+  gesture = null;
+  state.softDrop = false;
 });
 
 // --- Rendering ---
 
-function drawBoard() {
-  const size = boardCanvas.width / COLS;
-  const ctx = boardCtx;
-  ctx.clearRect(0, 0, boardCanvas.width, boardCanvas.height);
+// The grid lines and locked blocks only change when a piece lands, so they live on
+// an offscreen canvas that each frame copies instead of redrawing up to 200 blocks.
+const stackLayer = document.createElement('canvas');
+let stackDirty = true;
+
+function renderStackLayer(size) {
+  stackLayer.width = boardCanvas.width;
+  stackLayer.height = boardCanvas.height;
+  const ctx = stackLayer.getContext('2d');
 
   ctx.strokeStyle = 'rgba(167, 209, 41, .07)';
   ctx.lineWidth = 1;
   ctx.beginPath();
   for (let c = 1; c < COLS; c++) {
     ctx.moveTo(c * size + 0.5, 0);
-    ctx.lineTo(c * size + 0.5, boardCanvas.height);
+    ctx.lineTo(c * size + 0.5, stackLayer.height);
   }
   for (let r = 1; r < ROWS; r++) {
     ctx.moveTo(0, r * size + 0.5);
-    ctx.lineTo(boardCanvas.width, r * size + 0.5);
+    ctx.lineTo(stackLayer.width, r * size + 0.5);
   }
   ctx.stroke();
 
@@ -553,6 +642,17 @@ function drawBoard() {
       if (cell) drawBlock(ctx, c * size, (r - HIDDEN_ROWS) * size, size, cell.type, cell.tile, cell.rotation);
     }
   }
+}
+
+function drawBoard() {
+  const size = boardCanvas.width / COLS;
+  const ctx = boardCtx;
+  if (stackDirty) {
+    renderStackLayer(size);
+    stackDirty = false;
+  }
+  ctx.clearRect(0, 0, boardCanvas.width, boardCanvas.height);
+  ctx.drawImage(stackLayer, 0, 0);
 
   const p = state.piece;
   if (!p) return;
@@ -638,7 +738,13 @@ function drawPreview(ctx, type, centerX, centerY, size) {
   }
 }
 
+let sidePanelsKey = '';
+
 function drawSidePanels() {
+  const key = [state.held, state.holdUsed, ...state.queue.slice(0, NEXT_COUNT)].join();
+  if (key === sidePanelsKey) return;
+  sidePanelsKey = key;
+
   const holdCanvas = holdCtx.canvas;
   holdCtx.clearRect(0, 0, holdCanvas.width, holdCanvas.height);
   holdCtx.globalAlpha = state.holdUsed ? 0.35 : 1;
@@ -647,51 +753,70 @@ function drawSidePanels() {
 
   const nextCanvas = nextCtx.canvas;
   nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-  const wide = nextCanvas.width > nextCanvas.height;
-  const slot = (wide ? nextCanvas.width : nextCanvas.height) / NEXT_COUNT;
+  const slot = nextCanvas.height / NEXT_COUNT;
   state.queue.slice(0, NEXT_COUNT).forEach((type, i) => {
-    const offset = slot * i + slot / 2;
-    if (wide) drawPreview(nextCtx, type, offset, nextCanvas.height / 2, 32);
-    else drawPreview(nextCtx, type, nextCanvas.width / 2, offset, 40);
+    drawPreview(nextCtx, type, nextCanvas.width / 2, slot * i + slot / 2, 40);
   });
 }
 
+// Only touch the page when a value changes, since writes can trigger layout.
+const shownStats = {};
+
+function setStat(id, value) {
+  if (shownStats[id] === value) return;
+  shownStats[id] = value;
+  $(id).textContent = value;
+}
+
+// The narrow phone panels can't fit long numbers, so big scores shorten to 123K or 1.2M.
+const compactNumber = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+
+function formatScore(value) {
+  return value >= 100000 && window.matchMedia(COMPACT_QUERY).matches
+    ? compactNumber.format(value)
+    : value.toLocaleString();
+}
+
 function drawStats() {
-  $('score').textContent = state.score.toLocaleString();
-  $('best').textContent = Math.max(state.best, state.score).toLocaleString();
-  $('level').textContent = state.level;
-  $('lines').textContent = state.lines;
+  setStat('score', formatScore(state.score));
+  setStat('best', formatScore(Math.max(state.best, state.score)));
+  setStat('level', String(state.level));
+  setStat('lines', String(state.lines));
 }
 
 // Match the canvas backing store to its displayed size, with a whole number of
 // pixels per cell so the pixel art stays crisp.
 function resizeCanvas() {
   const rect = boardCanvas.getBoundingClientRect();
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = Math.min(window.devicePixelRatio || 1, MAX_CANVAS_DPR);
   const cell = Math.max(1, Math.round((rect.width * dpr) / COLS));
   const width = cell * COLS;
   const height = cell * ROWS;
   if (rect.width && (boardCanvas.width !== width || boardCanvas.height !== height)) {
     boardCanvas.width = width;
     boardCanvas.height = height;
-  }
-
-  // The phone layout has room for the next queue as a row, not a column.
-  const next = nextCtx.canvas;
-  const [nextW, nextH] = window.matchMedia(COMPACT_QUERY).matches ? [480, 216] : [192, 528];
-  if (next.width !== nextW || next.height !== nextH) {
-    next.width = nextW;
-    next.height = nextH;
+    stackDirty = true;
   }
 
   drawScene($('scene'));
 }
 
-window.addEventListener('resize', resizeCanvas);
+// Resize events can arrive in bursts, so handle at most one per frame.
+let resizePending = false;
+
+window.addEventListener('resize', () => {
+  if (resizePending) return;
+  resizePending = true;
+  requestAnimationFrame(() => {
+    resizePending = false;
+    resizeCanvas();
+  });
+});
 
 // --- Main loop ---
 
 let last = performance.now();
+let wasAnimating = true;
 
 function frame(now) {
   // Clamp so returning from a background tab doesn't apply a huge time step.
@@ -706,9 +831,15 @@ function frame(now) {
   }
   boardWrap.classList.toggle('danger', state.mode === 'playing' && Sound.state.tier >= 3);
   updateEffects(dt);
-  drawBoard();
-  drawSidePanels();
-  drawStats();
+  // Menus and the pause screen sit still, so skip drawing to save battery. The
+  // one extra frame after animating stops clears the last of any effect.
+  const animating = state.mode === 'playing' || Boolean(state.flash || state.pop);
+  if (animating || wasAnimating || stackDirty) {
+    drawBoard();
+    drawSidePanels();
+    drawStats();
+  }
+  wasAnimating = animating;
   requestAnimationFrame(frame);
 }
 

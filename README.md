@@ -36,7 +36,16 @@ The music is an original chiptune loop. It speeds up and adds layers as the leve
 | P or Esc | Pause |
 | M | Sound on / off |
 
-On phones and tablets, on-screen buttons appear below the board.
+On phones and tablets, thumb buttons appear below the board, or beside it when a phone is held sideways. You can also play directly on the board:
+
+| Gesture | Action |
+| --- | --- |
+| Tap | Rotate |
+| Drag sideways | Move |
+| Drag down | Soft drop |
+| Flick down | Hard drop |
+
+On Android, the phone also vibrates on good and bad placements.
 
 ## Run locally
 

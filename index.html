@@ -4,11 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
   <meta name="theme-color" content="#2f6b22">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Brickfall!">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="Brickfall! A jungle block-stacking game in the style of an early-80s Atari cartridge.">
   <title>Brickfall!</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+  <!-- Loads without blocking first paint, so a slow connection doesn't hold up the game. -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -33,6 +38,8 @@
     </h1>
     <p class="tagline">Jungle Brick Cartridge</p>
     <div class="stripes" aria-hidden="true"></div>
+    <button class="utility-btn utility-left" type="button" data-action="pause" aria-label="Pause">&#10074;&#10074;</button>
+    <button class="utility-btn utility-right" type="button" data-action="sound" data-sound-label="icon" aria-label="Sound on">&#9834;</button>
   </header>
 
   <main class="game">
@@ -84,14 +91,16 @@
     </aside>
 
     <div class="touch" aria-label="Touch controls">
-      <button type="button" data-action="left" aria-label="Move left">&larr;</button>
-      <button type="button" data-action="right" aria-label="Move right">&rarr;</button>
-      <button type="button" data-action="down" aria-label="Soft drop">&darr;</button>
-      <button type="button" data-action="rotate" aria-label="Rotate">&#8635;</button>
-      <button type="button" data-action="drop" aria-label="Hard drop">&#10515;</button>
-      <button type="button" data-action="hold" aria-label="Hold">Hold</button>
-      <button type="button" data-action="pause" aria-label="Pause">&#10074;&#10074;</button>
-      <button type="button" data-action="sound" aria-label="Toggle sound" data-sound-label>Sound on</button>
+      <div class="touch-cluster touch-left">
+        <button type="button" data-action="left" aria-label="Move left">&larr;</button>
+        <button type="button" data-action="right" aria-label="Move right">&rarr;</button>
+        <button class="wide" type="button" data-action="down" aria-label="Soft drop">&darr;</button>
+      </div>
+      <div class="touch-cluster touch-right">
+        <button class="label" type="button" data-action="hold" aria-label="Hold">Hold</button>
+        <button type="button" data-action="rotate" aria-label="Rotate">&#8635;</button>
+        <button class="wide label" type="button" data-action="drop" aria-label="Hard drop">Drop</button>
+      </div>
     </div>
   </main>
   <script src="theme.js"></script>

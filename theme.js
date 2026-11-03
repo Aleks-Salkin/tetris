@@ -129,6 +129,8 @@ const SCENE_PIXEL = 4;
 function drawScene(canvas) {
   const w = Math.ceil(window.innerWidth / SCENE_PIXEL);
   const h = Math.ceil(window.innerHeight / SCENE_PIXEL);
+  // Mobile address bars fire resize events constantly; only redraw for a real change.
+  if (canvas.width === w && canvas.height === h) return;
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext('2d');
