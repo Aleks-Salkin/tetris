@@ -3,17 +3,43 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <meta name="theme-color" content="#0d0f1a">
-  <meta name="description" content="Tetris in the browser, with hold, ghost piece, and touch controls.">
-  <title>Tetris</title>
+  <meta name="theme-color" content="#2f6b22">
+  <meta name="description" content="Brickfall! A jungle block-stacking game in the style of an early-80s Atari cartridge.">
+  <title>Brickfall!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <canvas id="scene" aria-hidden="true"></canvas>
+
+  <header class="masthead">
+    <h1 class="logo" aria-label="Brickfall!">
+      <svg viewBox="-2 -2 462 104" role="img" aria-hidden="true">
+        <g fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round" fill-rule="evenodd">
+          <!-- B --><path d="M0 0H34Q52 0 52 18V36Q52 46 44 50Q52 54 52 64V82Q52 100 34 100H0ZM18 16V42H30Q34 42 34 38V20Q34 16 30 16ZM18 58V84H30Q34 84 34 80V62Q34 58 30 58Z"/>
+          <!-- R --><path transform="translate(56)" d="M0 0H34Q52 0 52 18V38Q52 48 43 52L54 100H35L26 58H18V100H0ZM18 16V42H30Q34 42 34 38V20Q34 16 30 16Z"/>
+          <!-- I --><path transform="translate(114)" d="M0 0H18V100H0Z"/>
+          <!-- C --><path transform="translate(136)" d="M18 0H34Q50 0 50 18V34H33V22Q33 16 27 16H25Q19 16 19 22V78Q19 84 25 84H27Q33 84 33 78V66H50V82Q50 100 34 100H18Q1 100 1 82V18Q1 0 18 0Z"/>
+          <!-- K --><path transform="translate(190)" d="M0 0H18V40L34 0H53L34 46L55 100H35L18 56V100H0Z"/>
+          <!-- F --><path transform="translate(248)" d="M0 0H42V16H18V42H38V58H18V100H0Z"/>
+          <!-- A --><path transform="translate(292)" d="M18 0H38L56 100H38L35 80H21L18 100H0ZM23.5 64H32.5L28 30Z"/>
+          <!-- L --><path transform="translate(352)" d="M0 0H18V84H40V100H0Z"/>
+          <!-- L --><path transform="translate(396)" d="M0 0H18V84H40V100H0Z"/>
+          <!-- ! --><path transform="translate(440)" d="M0 0H18L15 70H3ZM1 80H17V100H1Z"/>
+        </g>
+      </svg>
+    </h1>
+    <p class="tagline">Jungle Brick Cartridge</p>
+    <div class="stripes" aria-hidden="true"></div>
+  </header>
+
   <main class="game">
     <aside class="panel panel-left">
       <section class="box">
         <h2>Hold</h2>
-        <canvas id="hold" width="96" height="96"></canvas>
+        <canvas id="hold" width="192" height="192"></canvas>
       </section>
       <section class="box stats">
         <h2>Score</h2>
@@ -27,10 +53,10 @@
       </section>
     </aside>
 
-    <div class="board-wrap">
-      <canvas id="board" width="300" height="600" aria-label="Tetris board"></canvas>
+    <div class="board-wrap" id="board-wrap">
+      <canvas id="board" width="300" height="600" aria-label="Game board"></canvas>
       <div id="overlay" class="overlay">
-        <h1 id="overlay-title">Tetris</h1>
+        <h2 id="overlay-title">Brickfall!</h2>
         <p id="overlay-text"></p>
         <button id="overlay-btn" type="button">Play</button>
       </div>
@@ -39,19 +65,21 @@
     <aside class="panel panel-right">
       <section class="box">
         <h2>Next</h2>
-        <canvas id="next" width="96" height="264"></canvas>
+        <canvas id="next" width="192" height="528"></canvas>
       </section>
       <section class="box help">
         <h2>Keys</h2>
         <dl>
-          <dt>&larr; &rarr;</dt><dd>Move</dd>
-          <dt>&darr;</dt><dd>Soft drop</dd>
-          <dt>&uarr; / X</dt><dd>Rotate</dd>
-          <dt>Z</dt><dd>Rotate back</dd>
-          <dt>Space</dt><dd>Hard drop</dd>
+          <dt>&larr;&rarr;</dt><dd>Move</dd>
+          <dt>&darr;</dt><dd>Soft</dd>
+          <dt>&uarr; X</dt><dd>Turn</dd>
+          <dt>Z</dt><dd>Back</dd>
+          <dt>Space</dt><dd>Drop</dd>
           <dt>C</dt><dd>Hold</dd>
           <dt>P</dt><dd>Pause</dd>
+          <dt>M</dt><dd>Sound</dd>
         </dl>
+        <button id="sound-btn" class="sound-btn" type="button" data-sound-label>Sound on</button>
       </section>
     </aside>
 
@@ -63,8 +91,11 @@
       <button type="button" data-action="drop" aria-label="Hard drop">&#10515;</button>
       <button type="button" data-action="hold" aria-label="Hold">Hold</button>
       <button type="button" data-action="pause" aria-label="Pause">&#10074;&#10074;</button>
+      <button type="button" data-action="sound" aria-label="Toggle sound" data-sound-label>Sound on</button>
     </div>
   </main>
+  <script src="theme.js"></script>
+  <script src="audio.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

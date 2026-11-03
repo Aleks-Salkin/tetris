@@ -1,10 +1,14 @@
 :root {
-  --bg: #0d0f1a;
-  --panel: #161927;
-  --line: #2a2f45;
-  --text: #e8eaf4;
-  --muted: #8b90a8;
-  --accent: #4dd6e8;
+  --box-green: #2f6b22;
+  --cream: #f1dfa0;
+  --gold: #f7e04b;
+  --orange: #f7a531;
+  --red: #c9302c;
+  --panel: #0b0b08;
+  --text: #f4f1e4;
+  --muted: #b9c98a;
+  --font: "Press Start 2P", "Courier New", monospace;
+  --header-h: 104px;
 }
 
 * { box-sizing: border-box; }
@@ -15,60 +19,125 @@ html, body {
 }
 
 body {
-  background: var(--bg);
+  position: relative;
+  background: var(--box-green);
   color: var(--text);
-  font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font: 10px/1.5 var(--font);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   overflow: hidden;
   touch-action: manipulation;
   -webkit-user-select: none;
   user-select: none;
 }
 
+/* Faint CRT scanlines over everything. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, .1) 2px 4px);
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.masthead {
+  position: relative;
+  flex: none;
+  height: var(--header-h);
+  padding-top: 10px;
+  text-align: center;
+  background: var(--box-green);
+}
+
+.logo {
+  margin: 0;
+  line-height: 0;
+}
+
+.logo svg {
+  height: 52px;
+  width: auto;
+}
+
+.tagline {
+  margin: 6px 0 0;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* The swing-arc colors, run straight across as a divider. */
+.stripes {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 12px;
+  background: linear-gradient(to bottom,
+    var(--gold) 0 25%, var(--orange) 25% 50%, #ec6a24 50% 75%, var(--red) 75% 100%);
+}
+
 .game {
   /* One cell of the board; everything is sized from it so the game fits any window. */
-  --cell: min(calc((100dvh - 32px) / 20), calc((100vw - 300px) / 10));
+  --cell: min(calc((100dvh - var(--header-h) - 20px) / 20), calc((100vw - 340px) / 10));
+  position: relative;
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 124px auto 124px;
+  grid-template-columns: 148px auto 148px;
   gap: 12px;
   align-items: start;
+  justify-content: center;
+  padding-top: 10px;
 }
 
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .box {
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: 3px solid var(--orange);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 10px;
 }
 
 h2 {
-  margin: 0 0 4px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: .08em;
+  margin: 0 0 6px;
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 1.2;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--gold);
 }
 
 .box canvas {
   display: block;
   width: 100%;
   height: auto;
+  max-height: 34dvh;
+  object-fit: contain;
+  image-rendering: pixelated;
 }
 
 .stats output {
   display: block;
   margin-bottom: 10px;
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.2;
   font-variant-numeric: tabular-nums;
 }
 
@@ -77,28 +146,59 @@ h2 {
 .help dl {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 2px 8px;
-  margin: 0;
-  font-size: 12px;
+  gap: 5px 8px;
+  margin: 0 0 8px;
+  font-size: 8px;
 }
 
-.help dt { color: var(--accent); white-space: nowrap; }
+.help dt { color: var(--orange); white-space: nowrap; }
 .help dd { margin: 0; color: var(--muted); }
+
+.sound-btn {
+  width: 100%;
+  padding: 6px 2px;
+  font: 8px/1.2 var(--font);
+  color: var(--text);
+  background: var(--box-green);
+  border: 2px solid var(--cream);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.sound-btn:hover { background: #3f8f2a; }
 
 .board-wrap {
   position: relative;
   width: calc(var(--cell) * 10);
   height: calc(var(--cell) * 20);
-  border: 1px solid var(--line);
-  border-radius: 4px;
+  outline: 4px solid var(--orange);
+  border-radius: 2px;
   overflow: hidden;
+}
+
+/* The stack is dangerously high or the game is very fast. */
+.board-wrap.danger {
+  animation: danger .5s steps(2) infinite;
+}
+
+@keyframes danger {
+  from { outline-color: var(--orange); }
+  to { outline-color: #ff2a2a; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-wrap.danger {
+    animation: none;
+    outline-color: #ff2a2a;
+  }
 }
 
 #board {
   display: block;
   width: 100%;
   height: 100%;
-  background: #0a0c14;
+  background: #08150a;
+  image-rendering: pixelated;
 }
 
 .overlay {
@@ -108,53 +208,62 @@ h2 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 16px;
+  gap: 12px;
+  padding: 14px;
   text-align: center;
-  background: rgba(10, 12, 20, .86);
+  background: rgba(6, 18, 8, .88);
 }
 
 .overlay[hidden] { display: none; }
 
-.overlay h1 {
+.overlay h2 {
   margin: 0;
-  font-size: 32px;
-  letter-spacing: .04em;
+  font-size: min(calc(var(--cell) * .72), 20px);
+  color: var(--text);
+  text-transform: none;
 }
 
 .overlay p {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
+  font-size: 9px;
+  line-height: 1.8;
   color: var(--muted);
   white-space: pre-line;
 }
 
 .overlay button {
-  padding: 10px 28px;
-  font: inherit;
-  font-weight: 600;
-  color: #06222a;
-  background: var(--accent);
+  padding: 12px 20px;
+  font: 11px/1 var(--font);
+  color: #1b1200;
+  background: var(--gold);
   border: 0;
-  border-radius: 6px;
+  border-bottom: 4px solid #ec6a24;
+  border-radius: 4px;
   cursor: pointer;
 }
 
-.overlay button:hover { filter: brightness(1.1); }
+.overlay button:hover { background: #fff08a; }
 
 .touch { display: none; }
 
 /* Phones: panels shrink into a strip above the board, buttons go below it. */
 @media (max-width: 640px), (pointer: coarse) {
-  body { align-items: flex-start; }
+  :root { --header-h: 60px; }
+
+  .masthead { padding-top: 6px; }
+  .logo svg { height: 40px; }
+  .tagline { display: none; }
+  .stripes { height: 8px; }
 
   .game {
-    --touch-h: 112px;
+    --touch-h: 104px;
     --strip-h: 84px;
     --cell: min(
-      calc((100dvh - var(--touch-h) - var(--strip-h) - 40px) / 20),
+      calc((100dvh - var(--header-h) - var(--touch-h) - var(--strip-h) - 36px) / 20),
       calc((100vw - 16px) / 10)
     );
     grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto auto;
     grid-template-areas:
       "left right"
       "board board"
@@ -163,28 +272,28 @@ h2 {
     padding: 6px 8px;
     width: 100%;
     justify-items: center;
+    align-content: start;
   }
 
   .panel-left { grid-area: left; flex-direction: row; gap: 6px; justify-self: stretch; }
   .panel-right { grid-area: right; flex-direction: row; }
-  .board-wrap { grid-area: board; }
+  .board-wrap { grid-area: board; outline-width: 3px; }
   .help { display: none; }
 
-  .box { padding: 4px 8px; height: var(--strip-h); }
-  .box canvas { height: calc(var(--strip-h) - 30px); width: auto; }
+  .box { padding: 4px 6px; height: var(--strip-h); border-width: 2px; }
+  .box canvas { height: calc(var(--strip-h) - 28px); width: auto; max-height: none; }
+  h2 { margin-bottom: 4px; font-size: 8px; }
 
   .stats {
     flex: 1;
     display: grid;
     grid-template-columns: repeat(2, auto);
-    grid-auto-flow: row;
     align-content: center;
-    gap: 0 8px;
-    font-size: 12px;
+    gap: 3px 6px;
   }
 
-  .stats h2 { margin: 0; font-size: 10px; align-self: center; }
-  .stats output { margin: 0; font-size: 13px; text-align: right; }
+  .stats h2 { margin: 0; font-size: 7px; align-self: center; }
+  .stats output { margin: 0; font-size: 8px; text-align: right; }
 
   .touch {
     grid-area: touch;
@@ -197,15 +306,15 @@ h2 {
   }
 
   .touch button {
-    font: inherit;
-    font-size: 18px;
+    font: 14px/1 var(--font), system-ui, sans-serif;
     color: var(--text);
     background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 8px;
+    border: 2px solid var(--orange);
+    border-radius: 6px;
     touch-action: none;
   }
 
-  .touch button:active { background: var(--line); }
-  .touch [data-action="hold"] { font-size: 13px; }
+  .touch button:active { background: var(--box-green); }
+  .touch [data-action="hold"],
+  .touch [data-action="sound"] { font-size: 8px; line-height: 1.3; }
 }
